@@ -5,17 +5,21 @@ controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
     if (IsSign1Displayed) {
         game.showLongText("To the maze of confusion ", DialogLayout.Bottom)
     }
+    if (IsPrisonSignDisplayed) {
+        game.showLongText("To the lava prison", DialogLayout.Bottom)
+    }
 })
 scene.onOverlapTile(SpriteKind.Player, assets.tile`myTile35`, function (sprite2, location2) {
     Mom.startEffect(effects.ashes, 3000)
     music.play(music.createSoundEffect(WaveShape.Noise, 2251, 1, 255, 255, 674, SoundExpressionEffect.None, InterpolationCurve.Logarithmic), music.PlaybackMode.UntilDone)
     Mom.setPosition(390, 830)
 })
+let projectile: Sprite = null
+let Shooting = false
 let HaveKey = false
-let DadFollowing = false
-let IsPrisonSignDisplayed = false
 let Button: Sprite = null
 let Facing = 0
+let IsPrisonSignDisplayed = false
 let IsSign1Displayed = false
 let Mom: Sprite = null
 tiles.setCurrentTilemap(tilemap`World map`)
@@ -38,39 +42,23 @@ let Key = sprites.create(img`
     . . . . . . . . . . . . . . . . 
     `, SpriteKind.Player)
 let Sign1 = sprites.create(img`
-    ................................
-    ................................
-    ..554444444444444444444.........
-    ..5444eeeeeeeeeeeeeeee44........
-    ..444eeeeeeeeeeeeeeeeeee44......
-    ..44eefffeffffeffffffefee44.....
-    ..4eeeeeeeeeeeeeeeeeeeeeee44....
-    ..4eeefffffeffffffefffffffe44...
-    ..4eeeeeeeeeeeeeeeeeeeeeeeee44..
-    ..4eeefeffffffefffffffefffeee44.
-    ..4eeeeeeeeeeeeeeeeeeeeeeeeee44.
-    ..4eeeffffeffffffffeffffffee44..
-    ..4eeeeeeeeeeeeeeeeeeeeeeee44...
-    ..4eeeffeffffefffffffeffff44....
-    ..4eeeeeeeeeeeeeeeeeeeeee44.....
-    ..44eefffffeffffefffffef44......
-    ..444eeeeeeeeeeeeeeeeee44.......
-    ..5444eeeeeeeeeeeeeeee44........
-    ..554444444444444444444.........
-    ..............eeee..............
-    ..............eeee..............
-    ..............eeee..............
-    ..............eeee..............
-    ..............eeee..............
-    ..............eeee..............
-    ..............eeee..............
-    ..............eeee..............
-    ..............eeee..............
-    ..............eeee..............
-    ..............eeee..............
-    .............feeeef.............
-    ..............ffff..............
-    `, SpriteKind.Projectile)
+    . . . . . . . . . . . . . . . . 
+    4 4 4 4 4 4 4 4 4 4 4 4 . . . . 
+    4 e e e e e e e e e e e 4 . . . 
+    4 e f f f e f f f e f f e 4 . . 
+    4 e e e e e e e e e e e e e 4 . 
+    4 e f f e f f e f f f f f e e 4 
+    4 e e e e e e e e e e e e e 4 . 
+    4 e f f f e f f f f e f e 4 . . 
+    4 e e e e e e e e e e e 4 . . . 
+    4 4 4 4 4 4 4 4 4 4 4 4 . . . . 
+    . . . . . . . e e . . . . . . . 
+    . . . . . . . e e . . . . . . . 
+    . . . . . . . e e . . . . . . . 
+    . . . . . . . e e . . . . . . . 
+    . . . . . . f e e f . . . . . . 
+    . . . . . . . f f . . . . . . . 
+    `, SpriteKind.Player)
 let Guard = sprites.create(img`
     . . . . . f f f f . . . . . . . 
     . . . f f e e e e f f . . . . . 
@@ -107,7 +95,24 @@ let PrisonSign = sprites.create(img`
     . . . . . . f e e f . . . . . . 
     . . . . . . . f f . . . . . . . 
     `, SpriteKind.Player)
-scaling.scaleByPercent(Sign1, -50, ScaleDirection.Uniformly, ScaleAnchor.Middle)
+let LaserShooter = sprites.create(img`
+    . . . . . . . . . . . . . . . . 
+    . 1 1 1 1 1 1 1 1 1 1 1 1 1 d . 
+    . 1 d d d d d d d d d d d d d . 
+    . 1 d d b b b b b b b b d d d . 
+    . 1 d b 2 2 2 2 2 2 2 2 b d d . 
+    . 1 d b 2 2 2 2 2 2 2 2 b d d . 
+    . 1 d d b b b b b b b b d d d . 
+    . 1 d d d d d d d d d d d d d . 
+    . d d d d d d b b d d d d d d . 
+    . . . . . . b b b b . . . . . . 
+    . . . . . . b f f b . . . . . . 
+    . . . . . . b f f b . . . . . . 
+    . . . . . . b f f b . . . . . . 
+    . . . . . . b f f b . . . . . . 
+    . . . . . . b f f b . . . . . . 
+    . . . . . . b f f b . . . . . . 
+    `, SpriteKind.Player)
 Sign1.setPosition(167, 248)
 Guard.setPosition(89, 680)
 Key.setPosition(535, 900)
@@ -159,9 +164,9 @@ let Son = sprites.create(img`
     f f f 4 4 4 e e f f f f 
     f f f 4 4 4 4 e e f f f 
     f 4 e 4 4 4 4 4 4 e 4 f 
-    f 4 4 f f 4 4 f f 4 4 f 
-    f e 4 d d d d d d 4 e f 
-    . f e d d b b d d e f . 
+    f 4 4 1 f 4 4 f 1 4 4 f 
+    f e 4 4 4 4 4 4 4 4 e f 
+    . f e 4 4 f f 4 4 e f . 
     . f f e 4 4 4 4 e f f . 
     e 4 f b 1 1 1 1 b f 4 e 
     4 d f 1 1 1 1 1 1 f d 4 
@@ -187,9 +192,10 @@ let Daughter = sprites.create(img`
     . . . . f f f f f f . . . . 
     . . . . f f . . f f . . . . 
     `, SpriteKind.Npc)
-Dad.setPosition(randint(900, 900), randint(900, 900))
-Son.setPosition(randint(75, 75), randint(925, 925))
-Daughter.setPosition(randint(900, 900), randint(75, 75))
+Dad.setPosition(900, 900)
+Son.setPosition(75, 925)
+Daughter.setPosition(950, 150)
+LaserShooter.setPosition(575, 45)
 game.onUpdate(function () {
     if (Mom.vx < 0) {
         Facing = 0
@@ -323,7 +329,7 @@ game.onUpdate(function () {
                 ......ffccccbbbbbbbbbbbbff......
                 ........ffffffffffffffff........
                 `],
-            500,
+            400,
             true
             )
             scaling.scaleByPercent(Button, -51, ScaleDirection.Uniformly, ScaleAnchor.Middle)
@@ -427,19 +433,44 @@ game.onUpdate(function () {
             true
             )
             scaling.scaleByPercent(Button, -51, ScaleDirection.Uniformly, ScaleAnchor.Middle)
-        } else if (IsPrisonSignDisplayed) {
-            IsSign1Displayed = false
-            sprites.destroy(Button)
         }
+    } else if (IsPrisonSignDisplayed) {
+        IsPrisonSignDisplayed = false
+        sprites.destroy(Button)
     }
     if (Mom.overlapsWith(Dad)) {
-        DadFollowing = true
-        Dad.follow(Mom)
+        game.showLongText("Mom                      TELL ME WHAT HAPPENED, NOW, HONEY!!!", DialogLayout.Bottom)
+        game.showLongText("Husband                      Ok, ok, geez.", DialogLayout.Bottom)
+        game.showLongText("Husband                     So I was out exploring, and I stepped on something.", DialogLayout.Bottom)
+        game.showLongText("Mom                          AND THEN?!", DialogLayout.Bottom)
+        game.showLongText("Husband                         Then, suddenly this maze came out of the ground and trapped me in here", DialogLayout.Bottom)
+        game.showLongText("Mom                        You have worried me half to death, go home now!", DialogLayout.Bottom)
+        game.showLongText("Husband                        Ok, thanks.", DialogLayout.Bottom)
+        music.play(music.createSoundEffect(WaveShape.Noise, 400, 5000, 255, 255, 500, SoundExpressionEffect.None, InterpolationCurve.Linear), music.PlaybackMode.UntilDone)
+        sprites.destroy(Dad, effects.confetti, 500)
+    }
+    if (Mom.overlapsWith(Son)) {
+        game.showLongText("Son                       Mommy! I’m so scared!", DialogLayout.Bottom)
+        game.showLongText("Mom                        How did you get in prison?", DialogLayout.Bottom)
+        game.showLongText("Son                       Uh…I have my secrets", DialogLayout.Bottom)
+        game.showLongText("Mom                      TELL ME, SON!", DialogLayout.Bottom)
+        game.showLongText("Son                             …", DialogLayout.Bottom)
+        game.showLongText("Mom                       HENRY ZANE ADILA, TELL ME OR ELSE…", DialogLayout.Bottom)
+        game.showLongText("Son                       Or else what?", DialogLayout.Bottom)
+        game.showLongText("Mom                    Or else I’m leaving you here!", DialogLayout.Bottom)
+        game.showLongText("Son                           *gulp*", DialogLayout.Bottom)
+        game.showLongText("Son                      I…uhhh…shoplifted", DialogLayout.Bottom)
+        game.showLongText("", DialogLayout.Bottom)
     }
     if (Mom.overlapsWith(Guard)) {
         if (!(HaveKey)) {
             game.showLongText("Guard                     Get a key in order to pass!", DialogLayout.Bottom)
             Mom.setPosition(Mom.x, Mom.y - 20)
+        }
+        if (HaveKey) {
+            game.showLongText("Guard                    You may pass", DialogLayout.Bottom)
+            Guard.setPosition(55, 680)
+            Mom.setPosition(Mom.x, Mom.y - 5)
         }
     }
     if (Mom.overlapsWith(Key)) {
@@ -447,6 +478,34 @@ game.onUpdate(function () {
         HaveKey = true
         game.showLongText("You found a key!", DialogLayout.Bottom)
         game.showLongText("Show it to the guard!", DialogLayout.Bottom)
-        Mom.setPosition(0, 0)
+        Mom.setPosition(568, 870)
+        music.play(music.createSoundEffect(WaveShape.Noise, 1, 5000, 255, 255, 600, SoundExpressionEffect.None, InterpolationCurve.Linear), music.PlaybackMode.UntilDone)
+    }
+    if (!(Shooting)) {
+        timer.after(700, function () {
+            Shooting = true
+        })
+    } else {
+        timer.after(700, function () {
+            projectile = sprites.createProjectileFromSprite(img`
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . 2 3 1 1 3 2 . . . . . 
+                . . . . . 2 3 1 1 3 2 . . . . . 
+                . . . . . 2 3 1 1 3 2 . . . . . 
+                . . . . . 2 3 1 1 3 2 . . . . . 
+                . . . . . 2 3 1 1 3 2 . . . . . 
+                . . . . . 2 3 1 1 3 2 . . . . . 
+                . . . . . 2 3 1 1 3 2 . . . . . 
+                . . . . . 2 3 1 1 3 2 . . . . . 
+                . . . . . 2 3 1 1 3 2 . . . . . 
+                . . . . . 2 3 1 1 3 2 . . . . . 
+                . . . . . 2 3 1 1 3 2 . . . . . 
+                . . . . . 2 3 1 1 3 2 . . . . . 
+                . . . . . . . . . . . . . . . . 
+                . . . . . . . . . . . . . . . . 
+                `, LaserShooter, 0, 50)
+            Shooting = false
+        })
     }
 })
